@@ -22,7 +22,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 // TODO - MESSAGING - Remove the @Ignore annotation
-@Ignore
+//@Ignore
 class AppRabbitTest {
     private val testSupport = RabbitTestSupport()
     private val engine = TestApplicationEngine()
@@ -77,6 +77,16 @@ class AppRabbitTest {
         //  then wait for consumers,
         //  then make a request
         //  and assert that the milk count 130
+        makePurchase(PurchaseInfo(105442, "milk", 1), routingKey = "safer")
+        testSupport.waitForConsumers("safer-products")
+
+        with(engine) {
+            with(handleRequest(HttpMethod.Get, "/")) {
+                val compact = response.content!!.replace("\\s".toRegex(), "")
+                val milk = "<td>milk</td><td>([0-9]+)</td>".toRegex().find(compact)!!.groups[1]!!.value
+                assertEquals(130, milk.toInt())
+            }
+        }
 
     }
 
@@ -85,7 +95,7 @@ class AppRabbitTest {
         makePurchases(PurchaseInfo(105443, "bacon", 1), routingKey = "safer")
         // TODO - MESSAGING -
         //  uncomment the below after introducing the safer product update handler with manual acknowledgement
-        //  testSupport.waitForConsumers("safer-products")
+        testSupport.waitForConsumers("safer-products")
 
         with(engine) {
             with(handleRequest(HttpMethod.Get, "/")) {
